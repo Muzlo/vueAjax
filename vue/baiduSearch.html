@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<script src="vue.js"></script>
+	<script type="text/javascript" src="vue-resource.js"></script>
+	<style type="text/css">
+		ul{margin: 0;padding: 0;}
+		li{background-color: #fff;color: #000;list-style: none;padding: 10px; margin: 0 0 2px;}
+		.gray{background-color: #eee;}
+	
+	</style>
+</head>
+<body>
+	
+<div id="box">
+	<input type="text"  @keydown.13="show($event)">
+	<img v-bind:src="src" v-bind:class="{red:false,blue:true}">
+	<input type="text" v-model="msg">
+	<p>{{msg|uppercase}}</p>
+	<input type="button" value="按钮" @click="get()"/>
+	<h2>{{wv}}</h2>
+
+	<input type="button" value="按钮2" @click="getPHP()"/>
+	<h2>{{wv2}}</h2>
+	
+	<br /><br />
+	<input type="text" v-model="jsonps" @keyup="getJSONP($event)" @keydown.down="changedown();" @keydown.up="changetop();">
+
+	<ul>
+		<li v-for="item in items" :class={gray:$index==now}>
+			{{item}}
+		</li>
+	</ul>
+	<p v-show="items.length==0">暂无数据</p>
+</div>
+
+
+<script type="text/javascript">
+	new Vue({
+		el:"#box",
+		data:{
+			src:"https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=3877263097,3619980650&fm=58",
+			msg:"",
+			wv:"",
+			wv2:"",
+			jsonps:"",
+			items:[],
+			now:-1
+		},
+		methods:{
+			show:function (ev){
+				alert("enter")
+			},
+			get:function (){
+				this.$http.get("data.txt").then(function (res){
+					this.wv=res.data;
+				},function (){
+					alert("error")
+				})
+			},
+			getPHP:function (){
+				this.$http.get("vue.php",{
+					a:1,b:3
+				}).then(function (res){
+					this.wv2=res.data;
+				},function (){})
+			},
+			getJSONP:function (ev){
+				if(ev.keyCode==38 || ev.keyCode==40)return;
+
+				if(ev.keyCode==13){
+                    window.open("https://www.baidu.com/s?wd="+this.jsonps);
+                    this.jsonps=""
+                }
+
+
+				this.$http.jsonp("https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su",{wd:this.jsonps},{
+					jsonp:"cb"
+				}).then(function (res){
+					this.items=(res.data.s)
+				},function (){})
+			},
+			changedown:function (){
+				this.now++;
+				if(this.now==this.items.length) {
+					this.now=0
+				};
+				this.jsonps=this.items[this.now]
+			},
+			changetop:function (){
+				this.now--;
+				if(this.now==-1) {
+					this.now=9
+				};
+				this.jsonps=this.items[this.now]
+			}
+
+		}
+	})
+
+</script>
+</body>
+</html>

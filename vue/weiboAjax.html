@@ -1,0 +1,247 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>微博ajax</title>
+<link href="style/weibo.css" rel="stylesheet" type="text/css" />
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+
+        .page-bar{
+    margin:40px;
+}
+ul,li{
+    margin: 0px;
+    padding: 0px;
+}
+li{
+    list-style: none
+}
+.page-bar li:first-child>a {
+   margin-left: 0px
+}
+.page-bar a{
+    border: 1px solid #ddd;
+    text-decoration: none;
+    position: relative;
+    float: left;
+    padding: 6px 12px;
+    margin-left: -1px;
+    line-height: 1.42857143;
+    color: #337ab7;
+    cursor: pointer
+}
+.page-bar a:hover{
+    background-color: #eee;
+}
+.page-bar a.banclick{
+    cursor:not-allowed;
+}
+.page-bar .active a{
+    color: #fff;
+    cursor: default;
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+.page-bar i{
+    font-style:normal;
+    color: #d44950;
+    margin: 0px 4px;
+    font-size: 12px;
+}
+
+
+    </style>
+    <script src="vue.js"></script>
+    <script src="vue-resource.js"></script>
+    <script>
+        window.onload=function(){
+            var URL='weibo.php';
+
+            new Vue({
+                el:'.znsArea',
+                data:{ //vue的属性、数据
+                    t1:'',
+                    msgData:[],
+                    all:'',
+                    cur: 1//当前页码
+                },
+                methods:{
+                    add:function(){
+                        //发送请求
+                        this.$http({
+                            url:URL,
+                            data:{ //后台发送数据
+                                act:'add',
+                                content:this.t1
+                            }
+                        }).then(function(res){
+                            var json=res.data;
+                            //msgData添加数据
+
+                            this.msgData.unshift({
+                                content:this.t1,
+                                time:json.time,
+                                acc:0,
+                                ref:0,
+                                id:json.id
+                            });
+
+                            this.t1='';
+                        });
+                    },
+                    getPageNum:function (){
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'get_page_count'
+                            }
+                        }).then(function (res){
+                           // console.log(res.data)
+                            this.all=res.data.count
+                        })
+                    },
+                    btnClick: function(n){//页码点击事件
+                        if(n != this.cur){
+                            this.cur = n 
+                        }
+                        this.msgData=[];
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'get',
+                                page:n
+                            }
+                        }).then(function(res){
+                            //console.log(res.data);
+                            
+                            var arr=res.data;
+                            for(var i=0; i<arr.length; i++){
+                               this.msgData.push({
+                                   content:arr[i].content,
+                                   time:arr[i].time,
+                                   acc:arr[i].acc,
+                                   ref:arr[i].ref,
+                                   id:arr[i].id
+                               });
+                            }
+
+                        });
+                       
+                    },
+                    pageClick: function(n){
+                        //console.log('现在在'+this.cur+'页');
+                        this.msgData=[];
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'get',
+                                page:n
+                            }
+                        }).then(function(res){
+                            //console.log(res.data);
+                            var arr=res.data;
+                            for(var i=0; i<arr.length; i++){
+                               this.msgData.push({
+                                   content:arr[i].content,
+                                   time:arr[i].time,
+                                   acc:arr[i].acc,
+                                   ref:arr[i].ref,
+                                   id:arr[i].id
+                               });
+                            }
+
+                        });
+                    }
+                },
+                created:function(){
+        
+                   this.getPageNum();
+                   this.pageClick(1);
+                },
+                filters: {  
+                    filterFun: function (value) {  
+                      return new Date(parseInt(value) * 1000).toLocaleString().replace(/年|月/g, "-").replace(/日/g, " ");
+                    }  
+                },
+                computed: {
+                    indexs: function(){
+                      var left = 1;
+                      var right = this.all;
+                      var ar = [];
+                      if(this.all>= 5){
+                        if(this.cur > 3 && this.cur < this.all-2){
+                                left = this.cur - 2
+                                right = this.cur + 2
+                        }else{
+                            if(this.cur<=3){
+                                left = 1
+                                right = 5
+                            }else{
+                                right = this.all
+                                left = this.all -4
+                            }
+                        }
+                     }
+                    while (left <= right){
+                        ar.push(left)
+                        left ++
+                    }
+                    return ar
+                   }     
+                }
+
+
+            });
+        };
+    </script>
+</head>
+
+<body>
+<div class="znsArea">
+<!--留言-->
+     <div class="takeComment">
+        <textarea name="textarea" class="takeTextField" id="tijiaoText" v-model="t1" @keydown.13.prevent="add()"></textarea>
+        <div class="takeSbmComment">
+            <input type="button" class="inputs" value="" @click="add()"  />
+            <span>(可按 Enter 回复)</span>
+        </div>
+    </div>
+<!--已留-->
+    <div class="commentOn">
+        <div class="noContent" v-show="msgData.length==0">暂无留言</div>
+        <div class="messList">
+        	<div class="reply" v-for="item in msgData" v-cloak>
+                <p class="replyContent">{{item.content}}</p>
+                <p class="operation">
+                    <span class="replyTime">{{item.time | filterFun}}</span>
+                    <span class="handle">
+                    	<a href="javascript:;" class="top">{{item.acc}}</a>
+                        <a href="javascript:;" class="down_icon">{{item.ref}}</a>
+                        <a href="javascript:;" class="cut">删除</a>
+                    </span>
+                </p>
+            </div>
+        </div>
+
+
+         <div class="page-bar">
+            <ul>
+                <li v-if="cur>1"><a v-on:click="cur--,pageClick(cur)">上一页</a></li>
+                <li v-if="cur==1"><a class="banclick">上一页</a></li>
+                <li v-for="index in indexs"  v-bind:class="{ 'active': cur == index}">
+                    <a v-on:click="btnClick(index)">{{ index }}</a>
+                </li>
+                <li v-if="cur!=all"><a v-on:click="cur++,pageClick(cur)">下一页</a></li>
+                <li v-if="cur == all"><a class="banclick">下一页</a></li>
+                <li><a>共<i>{{all}}</i>页</a></li>
+            </ul>
+        </div>
+
+
+    </div>
+</div>
+</body>
+</html>
