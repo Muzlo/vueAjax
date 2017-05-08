@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <title>微博ajax</title>
+
+
+
 <link href="style/weibo.css" rel="stylesheet" type="text/css" />
+<script src="https://cdn.bootcss.com/jquery/1.12.2/jquery.min.js"></script>
+
     <style>
         [v-cloak]{
             display: none;
@@ -53,11 +58,130 @@ li{
 }
 
 
+
+/*  LOADING */
+#loading{position: fixed;width: 100%; height: 100%; background: rgba(0,0,0,0.5);z-index: 999; left: 0;top: 0;}
+.spinner {
+  margin: 100px auto;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+ 
+.container1 > div, .container2 > div, .container3 > div {
+  width: 6px;
+  height: 6px;
+  background-color: #333;
+ 
+  border-radius: 100%;
+  position: absolute;
+  -webkit-animation: bouncedelay 1.2s infinite ease-in-out;
+  animation: bouncedelay 1.2s infinite ease-in-out;
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
+ 
+.spinner .spinner-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+ 
+.container2 {
+  -webkit-transform: rotateZ(45deg);
+  transform: rotateZ(45deg);
+}
+ 
+.container3 {
+  -webkit-transform: rotateZ(90deg);
+  transform: rotateZ(90deg);
+}
+ 
+.circle1 { top: 0; left: 0; }
+.circle2 { top: 0; right: 0; }
+.circle3 { right: 0; bottom: 0; }
+.circle4 { left: 0; bottom: 0; }
+ 
+.container2 .circle1 {
+  -webkit-animation-delay: -1.1s;
+  animation-delay: -1.1s;
+}
+ 
+.container3 .circle1 {
+  -webkit-animation-delay: -1.0s;
+  animation-delay: -1.0s;
+}
+ 
+.container1 .circle2 {
+  -webkit-animation-delay: -0.9s;
+  animation-delay: -0.9s;
+}
+ 
+.container2 .circle2 {
+  -webkit-animation-delay: -0.8s;
+  animation-delay: -0.8s;
+}
+ 
+.container3 .circle2 {
+  -webkit-animation-delay: -0.7s;
+  animation-delay: -0.7s;
+}
+ 
+.container1 .circle3 {
+  -webkit-animation-delay: -0.6s;
+  animation-delay: -0.6s;
+}
+ 
+.container2 .circle3 {
+  -webkit-animation-delay: -0.5s;
+  animation-delay: -0.5s;
+}
+ 
+.container3 .circle3 {
+  -webkit-animation-delay: -0.4s;
+  animation-delay: -0.4s;
+}
+ 
+.container1 .circle4 {
+  -webkit-animation-delay: -0.3s;
+  animation-delay: -0.3s;
+}
+ 
+.container2 .circle4 {
+  -webkit-animation-delay: -0.2s;
+  animation-delay: -0.2s;
+}
+ 
+.container3 .circle4 {
+  -webkit-animation-delay: -0.1s;
+  animation-delay: -0.1s;
+}
+ 
+@-webkit-keyframes bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0.0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+ 
+@keyframes bouncedelay {
+  0%, 80%, 100% {
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 40% {
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}
+
+
+
+
+
     </style>
-    <script src="vue.js"></script>
-    <script src="vue-resource.js"></script>
+    <script src="../vue.js"></script>
+    <script src="../vue-resource.js"></script>
     <script>
         window.onload=function(){
+
             var URL='weibo.php';
 
             new Vue({
@@ -66,10 +190,14 @@ li{
                     t1:'',
                     msgData:[],
                     all:'',
-                    cur: 1//当前页码
+                    cur: 1,//当前页码,
+                    good:0,
+                    loading: false
+         
                 },
                 methods:{
                     add:function(){
+                        this.loading=true;
                         //发送请求
                         this.$http({
                             url:URL,
@@ -78,14 +206,19 @@ li{
                                 content:this.t1
                             }
                         }).then(function(res){
+                            console.log(res)
+
+                            if(res.status==200){
+                                this.loading=false;
+                            }
                             var json=res.data;
                             //msgData添加数据
 
                             this.msgData.unshift({
                                 content:this.t1,
                                 time:json.time,
-                                acc:0,
-                                ref:0,
+                                acc:json.acc ||0,
+                                ref:json.ref ||0,
                                 id:json.id
                             });
 
@@ -108,6 +241,7 @@ li{
                             this.cur = n 
                         }
                         this.msgData=[];
+                        this.loading=true;
                         this.$http({
                             url:URL,
                             data:{
@@ -116,7 +250,7 @@ li{
                             }
                         }).then(function(res){
                             //console.log(res.data);
-                            
+                            this.loading=false;
                             var arr=res.data;
                             for(var i=0; i<arr.length; i++){
                                this.msgData.push({
@@ -133,6 +267,7 @@ li{
                     },
                     pageClick: function(n){
                         //console.log('现在在'+this.cur+'页');
+                        this.loading=true;
                         this.msgData=[];
                         this.$http({
                             url:URL,
@@ -142,6 +277,7 @@ li{
                             }
                         }).then(function(res){
                             //console.log(res.data);
+                            this.loading=false;
                             var arr=res.data;
                             for(var i=0; i<arr.length; i++){
                                this.msgData.push({
@@ -154,14 +290,52 @@ li{
                             }
 
                         });
+                    },
+                    zan:function (n,index){
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'acc',
+                                id:n
+                            }
+                        }).then(function(res){
+                            this.msgData[index].acc=this.msgData[index].acc +1
+                        });
+
+                    },
+                    cai:function (n,index){
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'ref',
+                                id:n
+                            }
+                        }).then(function(res){
+                           this.msgData[index].ref=this.msgData[index].ref +1
+                        });
+
+                    },
+                    deleteMsg:function (n,index){
+                        this.loading=true;
+                        this.$http({
+                            url:URL,
+                            data:{
+                                act:'del',
+                                id:n
+                            }
+                        }).then(function(res){
+                            this.loading=false;
+                            this.msgData.splice(index,1);
+                        });
                     }
+
                 },
                 created:function(){
-        
+                   
                    this.getPageNum();
                    this.pageClick(1);
                 },
-                filters: {  
+                filters: {
                     filterFun: function (value) {  
                       return new Date(parseInt(value) * 1000).toLocaleString().replace(/年|月/g, "-").replace(/日/g, " ");
                     }  
@@ -191,10 +365,16 @@ li{
                     }
                     return ar
                    }     
+                },
+                watch:function (){
+
                 }
 
 
             });
+
+
+            
         };
     </script>
 </head>
@@ -218,11 +398,17 @@ li{
                 <p class="operation">
                     <span class="replyTime">{{item.time | filterFun}}</span>
                     <span class="handle">
-                    	<a href="javascript:;" class="top">{{item.acc}}</a>
-                        <a href="javascript:;" class="down_icon">{{item.ref}}</a>
-                        <a href="javascript:;" class="cut">删除</a>
+            
+                        <a href="javascript:;" class="top" @click="zan(item.id,$index)">{{item.acc}}</a>
+                        <a href="javascript:;" class="down_icon" @click="cai(item.id,$index)">{{item.ref}}</a>
+                        <a href="javascript:;" class="cut" @click="deleteMsg(item.id,$index)">删除</a>
+
                     </span>
                 </p>
+                <p class="aa">第{{item.id}}条</p>
+                
+       
+
             </div>
         </div>
 
@@ -240,8 +426,38 @@ li{
             </ul>
         </div>
 
-
     </div>
+
+<div id="loading" v-show="loading">
+    <div class="spinner">
+      <div class="spinner-container container1">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+      </div>
+      <div class="spinner-container container2">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+      </div>
+      <div class="spinner-container container3">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+      </div>
+    </div>
+
 </div>
+
+</div>
+
+
+<script type="text/javascript">
+
+</script>
+
 </body>
 </html>
